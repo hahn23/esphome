@@ -1477,6 +1477,7 @@ class SplitDefault(Optional):
         esp32_arduino=vol.UNDEFINED,
         esp32_idf=vol.UNDEFINED,
         rp2040=vol.UNDEFINED,
+        libretiny=vol.UNDEFINED,
         host=vol.UNDEFINED,
     ):
         super().__init__(key)
@@ -1488,6 +1489,7 @@ class SplitDefault(Optional):
             esp32_idf if esp32 is vol.UNDEFINED else esp32
         )
         self._rp2040_default = vol.default_factory(rp2040)
+        self._libretiny_default = vol.default_factory(libretiny)
         self._host_default = vol.default_factory(host)
 
     @property
@@ -1500,6 +1502,8 @@ class SplitDefault(Optional):
             return self._esp32_idf_default
         if CORE.is_rp2040:
             return self._rp2040_default
+        if CORE.is_libretiny and CORE.using_arduino:
+            return self._libretiny_default
         if CORE.is_host:
             return self._host_default
         raise NotImplementedError

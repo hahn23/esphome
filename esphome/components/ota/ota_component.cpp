@@ -29,7 +29,7 @@ std::unique_ptr<OTABackend> make_ota_backend() {
 #ifdef USE_ESP8266
   return make_unique<ArduinoESP8266OTABackend>();
 #endif  // USE_ESP8266
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
   return make_unique<ArduinoESP32OTABackend>();
 #endif  // USE_ESP32
 #endif  // USE_ARDUINO
@@ -357,6 +357,14 @@ void OTAComponent::handle_() {
 error:
   buf[0] = static_cast<uint8_t>(error_code);
   this->writeall_(buf, 1);
+  // send backend error code; 2 bytes, MSB first
+  int backend_errno = backend->get_backend_errno();
+  ESP_LOGW(TAG, "Backend error code: %04x", backend_errno);
+  buf[0] = static_cast<uint8_t>(backend_errno >> 8);
+  buf[1] = static_cast<uint8_t>(backend_errno & 0xFF);
+  this->writeall_(buf, 2);
+  // give receiver a chance to read the error code
+  delay(100);  // NOLINT
   this->client_->close();
   this->client_ = nullptr;
 

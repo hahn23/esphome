@@ -93,12 +93,20 @@ rp2040:
     platform_version: https://github.com/maxgerhardt/platform-raspberrypi.git
 """
 
+LIBRETINY_CONFIG = """
+libretiny:
+  board: {board}
+  framework:
+    version: dev
+"""
+
 HARDWARE_BASE_CONFIGS = {
     "ESP8266": ESP8266_CONFIG,
     "ESP32": ESP32_CONFIG,
     "ESP32S2": ESP32S2_CONFIG,
     "ESP32C3": ESP32C3_CONFIG,
     "RP2040": RP2040_CONFIG,
+    "LIBRETINY": LIBRETINY_CONFIG,
 }
 
 
@@ -182,6 +190,7 @@ captive_portal:
 
 def wizard_write(path, **kwargs):
     from esphome.components.esp8266 import boards as esp8266_boards
+    from esphome.components.esp32 import boards as esp32_boards
     from esphome.components.rp2040 import boards as rp2040_boards
 
     name = kwargs["name"]
@@ -192,12 +201,14 @@ def wizard_write(path, **kwargs):
             kwargs[key] = sanitize_double_quotes(kwargs[key])
 
     if "platform" not in kwargs:
-        if board in esp8266_boards.ESP8266_BOARD_PINS:
+        if board in esp8266_boards.BOARDS:
             platform = "ESP8266"
-        elif board in rp2040_boards.RP2040_BOARD_PINS:
+        elif board in esp32_boards.BOARDS:
+            platform = "ESP32"
+        elif board in rp2040_boards.BOARDS:
             platform = "RP2040"
         else:
-            platform = "ESP32"
+            platform = "LIBRETINY"
         kwargs["platform"] = platform
     hardware = kwargs["platform"]
 
@@ -228,7 +239,8 @@ def safe_print_step(step, big):
 def default_input(text, default):
     safe_print()
     safe_print(f"Press ENTER for default ({default})")
-    return input(text.format(default)) or default
+    safe_print(text.format(default), end="")
+    return input() or default
 
 
 # From https://stackoverflow.com/a/518232/8924614
@@ -243,6 +255,7 @@ def strip_accents(value):
 def wizard(path):
     from esphome.components.esp32 import boards as esp32_boards
     from esphome.components.esp8266 import boards as esp8266_boards
+    from esphome.components.libretiny import boards as libretiny_boards
 
     if not path.endswith(".yaml") and not path.endswith(".yml"):
         safe_print(
@@ -277,7 +290,8 @@ def wizard(path):
     )
     safe_print()
     sleep(1)
-    name = input(color(Fore.BOLD_WHITE, "(name): "))
+    safe_print(color(Fore.BOLD_WHITE, "(name): "), end="")
+    name = input()
 
     while True:
         try:
@@ -306,15 +320,18 @@ def wizard(path):
         "firmwares for it."
     )
     safe_print(
-        f"Are you using an {color(Fore.GREEN, 'ESP32')} or {color(Fore.GREEN, 'ESP8266')} platform? (Choose ESP8266 for Sonoff devices)"
+        f"Are you using an {color(Fore.GREEN, 'ESP32')}, {color(Fore.GREEN, 'ESP8266')} or {color(Fore.GREEN, 'LibreTiny')} platform? (Choose ESP8266 for Sonoff devices)"
     )
     while True:
         sleep(0.5)
         safe_print()
-        safe_print("Please enter either ESP32 or ESP8266.")
-        platform = input(color(Fore.BOLD_WHITE, "(ESP32/ESP8266): "))
+        safe_print("Please enter either ESP32, ESP8266 or LibreTiny.")
+        safe_print(color(Fore.BOLD_WHITE, "(ESP32/ESP8266/LibreTiny): "), end="")
+        platform = input()
         try:
-            platform = vol.All(vol.Upper, vol.Any("ESP32", "ESP8266"))(platform)
+            platform = vol.All(vol.Upper, vol.Any("ESP32", "ESP8266", "LIBRETINY"))(
+                platform.upper()
+            )
             break
         except vol.Invalid:
             safe_print(
@@ -328,10 +345,12 @@ def wizard(path):
         board_link = (
             "http://docs.platformio.org/en/latest/platforms/espressif32.html#boards"
         )
-    else:
+    elif platform == "ESP8266":
         board_link = (
             "http://docs.platformio.org/en/latest/platforms/espressif8266.html#boards"
         )
+    else:
+        board_link = "https://docs.libretiny.ml/docs/status/supported/"
 
     safe_print(f"Next, I need to know what {color(Fore.GREEN, 'board')} you're using.")
     sleep(0.5)
@@ -343,13 +362,26 @@ def wizard(path):
     if platform == "ESP32":
         safe_print(f"For example \"{color(Fore.BOLD_WHITE, 'nodemcu-32s')}\".")
         boards = list(esp32_boards.ESP32_BOARD_PINS.keys())
-    else:
+    elif platform == "ESP8266":
         safe_print(f"For example \"{color(Fore.BOLD_WHITE, 'nodemcuv2')}\".")
         boards = list(esp8266_boards.ESP8266_BOARD_PINS.keys())
-    safe_print(f"Options: {', '.join(sorted(boards))}")
+
+    if platform == "LIBRETINY":
+        safe_print(f"For example \"{color(Fore.BOLD_WHITE, 'cb2s')}\".")
+        boards = libretiny_boards.fetch_board_list()
+        boards_ids = []
+        safe_print("Options:")
+        for group in boards:
+            for board_id, board_name in group["items"].items():
+                safe_print(f" - {board_id} - {board_name}")
+                boards_ids.append(board_id)
+        boards = boards_ids
+    else:
+        safe_print(f"Options: {', '.join(sorted(boards))}")
 
     while True:
-        board = input(color(Fore.BOLD_WHITE, "(board): "))
+        safe_print(color(Fore.BOLD_WHITE, "(board): "), end="")
+        board = input()
         try:
             board = vol.All(vol.Lower, vol.Any(*boards))(board)
             break
@@ -375,7 +407,8 @@ def wizard(path):
     sleep(1.5)
     safe_print(f"For example \"{color(Fore.BOLD_WHITE, 'Abraham Linksys')}\".")
     while True:
-        ssid = input(color(Fore.BOLD_WHITE, "(ssid): "))
+        safe_print(color(Fore.BOLD_WHITE, "(ssid): "), end="")
+        ssid = input()
         try:
             ssid = cv.ssid(ssid)
             break
@@ -401,7 +434,8 @@ def wizard(path):
     safe_print()
     safe_print(f"For example \"{color(Fore.BOLD_WHITE, 'PASSWORD42')}\"")
     sleep(0.5)
-    psk = input(color(Fore.BOLD_WHITE, "(PSK): "))
+    safe_print(color(Fore.BOLD_WHITE, "(PSK): "), end="")
+    psk = input()
     safe_print(
         "Perfect! WiFi is now set up (you can create static IPs and so on later)."
     )
@@ -418,7 +452,8 @@ def wizard(path):
     safe_print()
     sleep(0.25)
     safe_print("Press ENTER for no password")
-    password = input(color(Fore.BOLD_WHITE, "(password): "))
+    safe_print(color(Fore.BOLD_WHITE, "(password): "), end="")
+    password = input()
 
     wizard_write(
         path=path,

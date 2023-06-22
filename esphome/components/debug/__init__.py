@@ -38,7 +38,7 @@ CONFIG_SCHEMA = cv.All(
             ),
         }
     ).extend(cv.polling_component_schema("60s")),
-    cv.only_on(["esp32", "esp8266"]),
+    cv.only_on(["esp32", "esp8266", "libretiny"]),
 )
 
 
