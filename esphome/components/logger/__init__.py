@@ -19,6 +19,7 @@ from esphome.const import (
     CONF_TX_BUFFER_SIZE,
     PLATFORM_ESP32,
     PLATFORM_ESP8266,
+    PLATFORM_LIBRETINY,
     PLATFORM_RP2040,
 )
 from esphome.core import CORE, EsphomeError, Lambda, coroutine_with_priority
@@ -68,6 +69,9 @@ UART2 = "UART2"
 UART0_SWAP = "UART0_SWAP"
 USB_SERIAL_JTAG = "USB_SERIAL_JTAG"
 USB_CDC = "USB_CDC"
+SERIAL0 = "SERIAL0"
+SERIAL1 = "SERIAL1"
+SERIAL2 = "SERIAL2"
 
 UART_SELECTION_ESP32 = {
     VARIANT_ESP32: [UART0, UART1, UART2],
@@ -77,6 +81,7 @@ UART_SELECTION_ESP32 = {
 }
 
 UART_SELECTION_ESP8266 = [UART0, UART0_SWAP, UART1]
+UART_SELECTION_LT = [UART0, SERIAL0, SERIAL1, SERIAL2]
 
 ESP_IDF_UARTS = [USB_CDC, USB_SERIAL_JTAG]
 
@@ -89,6 +94,9 @@ HARDWARE_UART_TO_UART_SELECTION = {
     UART2: logger_ns.UART_SELECTION_UART2,
     USB_CDC: logger_ns.UART_SELECTION_USB_CDC,
     USB_SERIAL_JTAG: logger_ns.UART_SELECTION_USB_SERIAL_JTAG,
+    SERIAL0: logger_ns.UART_SELECTION_SERIAL0,
+    SERIAL1: logger_ns.UART_SELECTION_SERIAL1,
+    SERIAL2: logger_ns.UART_SELECTION_SERIAL2,
 }
 
 HARDWARE_UART_TO_SERIAL = {
@@ -96,6 +104,9 @@ HARDWARE_UART_TO_SERIAL = {
     UART0_SWAP: cg.global_ns.Serial,
     UART1: cg.global_ns.Serial1,
     UART2: cg.global_ns.Serial2,
+    SERIAL0: cg.global_ns.Serial0,
+    SERIAL1: cg.global_ns.Serial1,
+    SERIAL2: cg.global_ns.Serial2,
 }
 
 is_log_level = cv.one_of(*LOG_LEVELS, upper=True)
@@ -112,6 +123,8 @@ def uart_selection(value):
         return cv.one_of(*UART_SELECTION_ESP8266, upper=True)(value)
     if CORE.is_rp2040:
         return cv.one_of(*UART_SELECTION_RP2040, upper=True)(value)
+    if CORE.is_libretiny:
+        return cv.one_of(*UART_SELECTION_LT, upper=True)(value)
     raise NotImplementedError
 
 
@@ -144,8 +157,16 @@ CONFIG_SCHEMA = cv.All(
                 esp8266=UART0,
                 esp32=UART0,
                 rp2040=USB_CDC,
+                libretiny=UART0,
             ): cv.All(
-                cv.only_on([PLATFORM_ESP8266, PLATFORM_ESP32, PLATFORM_RP2040]),
+                cv.only_on(
+                    [
+                        PLATFORM_ESP8266,
+                        PLATFORM_ESP32,
+                        PLATFORM_RP2040,
+                        PLATFORM_LIBRETINY,
+                    ]
+                ),
                 uart_selection,
             ),
             cv.Optional(CONF_LEVEL, default="DEBUG"): is_log_level,

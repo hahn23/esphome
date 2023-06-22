@@ -10,9 +10,16 @@ VALID_SUBSTITUTIONS_CHARACTERS = (
 PLATFORM_ESP32 = "esp32"
 PLATFORM_ESP8266 = "esp8266"
 PLATFORM_RP2040 = "rp2040"
+PLATFORM_LIBRETINY = "libretiny"
 PLATFORM_HOST = "host"
 
-TARGET_PLATFORMS = [PLATFORM_ESP32, PLATFORM_ESP8266, PLATFORM_RP2040, PLATFORM_HOST]
+TARGET_PLATFORMS = [
+    PLATFORM_ESP32,
+    PLATFORM_ESP8266,
+    PLATFORM_RP2040,
+    PLATFORM_LIBRETINY,
+    PLATFORM_HOST,
+]
 
 SOURCE_FILE_EXTENSIONS = {".cpp", ".hpp", ".h", ".c", ".tcc", ".ino"}
 HEADER_FILE_EXTENSIONS = {".h", ".hpp", ".tcc"}
@@ -833,6 +840,7 @@ ICON_BRIEFCASE_DOWNLOAD = "mdi:briefcase-download"
 ICON_BRIGHTNESS_5 = "mdi:brightness-5"
 ICON_BRIGHTNESS_6 = "mdi:brightness-6"
 ICON_BUG = "mdi:bug"
+ICON_CELLPHONE_ARROW_DOWN = "mdi:cellphone-arrow-down"
 ICON_CHECK_CIRCLE_OUTLINE = "mdi:check-circle-outline"
 ICON_CHEMICAL_WEAPON = "mdi:chemical-weapon"
 ICON_CHIP = "mdi:chip"
